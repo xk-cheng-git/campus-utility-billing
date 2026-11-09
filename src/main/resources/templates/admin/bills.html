@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水电费录入 — 校园水电费管理系统</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><span class="icon">🏫</span> 水电管理</h2>
+                <p>管理后台</p>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">管理菜单</div>
+                    <a href="/admin" class="nav-item"><span class="nav-icon">📊</span> 首页概览</a>
+                    <a href="/admin/bills" class="nav-item active"><span class="nav-icon">📝</span> 水电费录入</a>
+                    <a href="/admin/config" class="nav-item"><span class="nav-icon">⚙️</span> 单价配置</a>
+                    <a href="/admin/messages" class="nav-item"><span class="nav-icon">📨</span> 消息管理</a>
+                    <a href="/admin/users" class="nav-item"><span class="nav-icon">👥</span> 用户管理</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">管</div>
+                    <div class="user-detail">
+                        <div class="user-name" id="userName">管理员</div>
+                        <div class="user-role" id="userRole">管理员</div>
+                    </div>
+                    <button class="logout-btn" onclick="doLogout()" title="退出登录">⏻</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">📝 水电费录入</h1>
+                <div class="header-actions">
+                    <span class="text-muted">录入用量 → 自动生成账单</span>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <!-- 核心：水电费录入表单 -->
+                <div class="card" style="border-left: 4px solid var(--primary);">
+                    <div class="card-header">
+                        <h3>📝 录入水电用量</h3>
+                        <span class="text-muted">填写宿舍、月份和用量，系统自动计算费用并生成账单</span>
+                    </div>
+                    <div class="card-body">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:16px; align-items:end;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>宿舍号 <span class="text-danger">*</span></label>
+                                <input type="text" id="newDorm" class="form-control" placeholder="如：6栋808">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>账单月份 <span class="text-danger">*</span></label>
+                                <input type="month" id="newMonth" class="form-control">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>用水量（吨）<span class="text-danger">*</span></label>
+                                <input type="number" id="newWater" class="form-control" placeholder="0.00" min="0" step="0.01">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>用电量（度）<span class="text-danger">*</span></label>
+                                <input type="number" id="newElectric" class="form-control" placeholder="0.00" min="0" step="0.01">
+                            </div>
+                        </div>
+
+                        <!-- 费用预估区域 -->
+                        <div style="display:grid; grid-template-columns: 1fr auto; gap:16px; align-items:center; margin-top:16px; padding:16px 20px; background:var(--gray-50); border-radius:8px;">
+                            <div>
+                                <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap;">
+                                    <div>
+                                        <span class="text-muted" style="font-size:12px;">水费</span>
+                                        <div id="waterCost" style="font-size:16px; font-weight:600; color:var(--primary);">¥0.00</div>
+                                    </div>
+                                    <div style="font-size:20px; color:var(--gray-400);">+</div>
+                                    <div>
+                                        <span class="text-muted" style="font-size:12px;">电费</span>
+                                        <div id="electricCost" style="font-size:16px; font-weight:600; color:var(--warning);">¥0.00</div>
+                                    </div>
+                                    <div style="font-size:20px; color:var(--gray-400);">=</div>
+                                    <div>
+                                        <span class="text-muted" style="font-size:12px;">预估总费用</span>
+                                        <div id="estimateAmount" style="font-size:22px; font-weight:700; color:var(--danger);">¥0.00</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top:8px;">
+                                    <span class="text-muted" style="font-size:12px;">
+                                        当前单价：水 <span id="showWaterPrice">-</span> 元/吨，电 <span id="showElectricPrice">-</span> 元/度
+                                    </span>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-lg" id="createBtn" onclick="createBill()" style="min-width:140px;">
+                                ✓ 生成账单
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账单列表 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>📄 账单记录</h3>
+                        <div class="form-inline">
+                            <input type="text" id="filterDorm" class="form-control" placeholder="宿舍号" style="width:130px;">
+                            <select id="filterStatus" class="form-control" style="width:120px;">
+                                <option value="">全部状态</option>
+                                <option value="0">未缴费</option>
+                                <option value="1">已缴费</option>
+                            </select>
+                            <input type="month" id="filterMonth" class="form-control" style="width:150px;">
+                            <button class="btn btn-outline btn-sm" onclick="loadBills()">🔍 查询</button>
+                            <button class="btn btn-outline btn-sm" onclick="resetFilter()">↻ 重置</button>
+                            <button class="btn btn-warning btn-sm" onclick="doRemind()">📢 催缴</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>账单ID</th>
+                                        <th>宿舍</th>
+                                        <th>月份</th>
+                                        <th>用水量(吨)</th>
+                                        <th>用电量(度)</th>
+                                        <th>金额</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="billTable">
+                                    <tr><td colspan="8" class="text-center text-muted">加载中...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 账单详情弹窗 -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>账单详情</h3>
+                <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+            </div>
+            <div class="modal-body" id="detailContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('detailModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        if (!pageInit({ requireAdmin: true })) throw new Error('Not admin');
+
+        let waterPrice = 2.88, electricPrice = 0.65;
+
+        // 加载配置
+        async function loadConfig() {
+            try {
+                const config = await api.get('/api/config/prices');
+                waterPrice = parseFloat(config.waterPrice);
+                electricPrice = parseFloat(config.electricPrice);
+                document.getElementById('showWaterPrice').textContent = waterPrice.toFixed(2);
+                document.getElementById('showElectricPrice').textContent = electricPrice.toFixed(2);
+            } catch (e) {}
+        }
+
+        // 实时计算费用
+        document.addEventListener('input', function(e) {
+            if (['newWater', 'newElectric'].includes(e.target.id)) {
+                const w = parseFloat(document.getElementById('newWater').value) || 0;
+                const el = parseFloat(document.getElementById('newElectric').value) || 0;
+                const wCost = w * waterPrice;
+                const eCost = el * electricPrice;
+                document.getElementById('waterCost').textContent = '¥' + formatMoney(wCost);
+                document.getElementById('electricCost').textContent = '¥' + formatMoney(eCost);
+                document.getElementById('estimateAmount').textContent = '¥' + formatMoney(wCost + eCost);
+            }
+        });
+
+        async function createBill() {
+            const dorm = document.getElementById('newDorm').value.trim();
+            const yearMonth = document.getElementById('newMonth').value;
+            const waterUsage = parseFloat(document.getElementById('newWater').value);
+            const electricUsage = parseFloat(document.getElementById('newElectric').value);
+
+            if (!dorm) { toast.warning('请输入宿舍号'); return; }
+            if (!yearMonth) { toast.warning('请选择账单月份'); return; }
+            if (isNaN(waterUsage) || waterUsage < 0) { toast.warning('请输入有效的用水量'); return; }
+            if (isNaN(electricUsage) || electricUsage < 0) { toast.warning('请输入有效的用电量'); return; }
+            if (waterUsage === 0 && electricUsage === 0) { toast.warning('用水量和用电量不能同时为0'); return; }
+
+            const btn = document.getElementById('createBtn');
+            btn.disabled = true;
+            btn.textContent = '生成中...';
+
+            try {
+                await api.post('/api/bills', {
+                    dorm,
+                    yearMonth,
+                    waterUsage,
+                    electricUsage,
+                    createBy: auth.getStudentNo()
+                });
+                const total = waterUsage * waterPrice + electricUsage * electricPrice;
+                toast.success(`账单生成成功！${dorm} ${yearMonth} 应缴 ¥${formatMoney(total)}`);
+                // 清空表单
+                document.getElementById('newDorm').value = '';
+                document.getElementById('newWater').value = '';
+                document.getElementById('newElectric').value = '';
+                document.getElementById('waterCost').textContent = '¥0.00';
+                document.getElementById('electricCost').textContent = '¥0.00';
+                document.getElementById('estimateAmount').textContent = '¥0.00';
+                loadBills();
+            } catch (e) {
+                toast.error(e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✓ 生成账单';
+            }
+        }
+
+        async function loadBills() {
+            const dorm = document.getElementById('filterDorm').value.trim();
+            const status = document.getElementById('filterStatus').value;
+            const month = document.getElementById('filterMonth').value;
+
+            let url = '/api/bills?';
+            const params = [];
+            if (dorm) params.push(`dorm=${encodeURIComponent(dorm)}`);
+            if (status !== '') params.push(`payStatus=${status}`);
+            if (month) params.push(`yearMonth=${month}`);
+            url += params.join('&');
+
+            try {
+                const bills = await api.get(url);
+
+                if (bills.length === 0) {
+                    document.getElementById('billTable').innerHTML =
+                        '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📄</div><p>暂无账单</p></div></td></tr>';
+                    return;
+                }
+
+                document.getElementById('billTable').innerHTML = bills.map(b => `
+                    <tr>
+                        <td>${b.billId}</td>
+                        <td>${b.dorm}</td>
+                        <td>${b.yearMonth}</td>
+                        <td>${parseFloat(b.waterUsage).toFixed(2)}</td>
+                        <td>${parseFloat(b.electricUsage).toFixed(2)}</td>
+                        <td class="font-bold">¥${formatMoney(b.totalMoney)}</td>
+                        <td>${payStatusTag(b.payStatus)}</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="showDetail(${b.billId})">详情</button></td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                toast.error(e.message);
+            }
+        }
+
+        function resetFilter() {
+            document.getElementById('filterDorm').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterMonth').value = '';
+            loadBills();
+        }
+
+        async function showDetail(billId) {
+            try {
+                const b = await api.get(`/api/bills/${billId}`);
+                document.getElementById('detailContent').innerHTML = `
+                    <div style="display:grid; gap:12px;">
+                        <div class="d-flex justify-between"><span class="text-muted">账单ID</span><span>${b.billId}</span></div>
+                        <div class="d-flex justify-between"><span class="text-muted">宿舍</span><span>${b.dorm}</span></div>
+                        <div class="d-flex justify-between"><span class="text-muted">账单月份</span><span>${b.yearMonth}</span></div>
+                        <div class="d-flex justify-between"><span class="text-muted">用水量</span><span>${parseFloat(b.waterUsage).toFixed(2)} 吨</span></div>
+                        <div class="d-flex justify-between"><span class="text-muted">用电量</span><span>${parseFloat(b.electricUsage).toFixed(2)} 度</span></div>
+                        <div class="d-flex justify-between"><span class="text-muted">应缴金额</span><span class="font-bold">¥${formatMoney(b.totalMoney)}</span></div>
+                        <div class="d-flex justify-between"><span class="text-muted">缴费状态</span>${payStatusTag(b.payStatus)}</div>
+                        <div class="d-flex justify-between"><span class="text-muted">创建人</span><span>${b.createBy || '-'}</span></div>
+                    </div>
+                `;
+                openModal('detailModal');
+            } catch (e) {
+                toast.error(e.message);
+            }
+        }
+
+        async function doRemind() {
+            if (!confirmAction('确定要向所有未缴费宿舍发送催缴消息吗？')) return;
+            try {
+                const result = await api.post('/api/bills/remind', { operatorNo: auth.getStudentNo() });
+                toast.success(`催缴完成，共发送 ${result.sentCount} 条消息`);
+            } catch (e) {
+                toast.error(e.message);
+            }
+        }
+
+        // 初始化
+        document.getElementById('newMonth').value = getCurrentYearMonth();
+        loadConfig();
+        loadBills();
+
+        function doLogout() {
+            auth.clear();
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

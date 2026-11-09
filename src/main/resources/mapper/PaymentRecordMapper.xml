@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.utilitybilling.mapper.PaymentRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.campus.utilitybilling.entity.PaymentRecord">
+        <id column="pay_id" property="payId"/>
+        <result column="bill_id" property="billId"/>
+        <result column="student_no" property="studentNo"/>
+        <result column="pay_type" property="payType"/>
+        <result column="pay_money" property="payMoney"/>
+        <result column="pay_time" property="payTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.campus.utilitybilling.entity.PaymentRecord">
+        <selectKey keyProperty="payId" resultType="long" order="BEFORE">
+            SELECT seq_payment_record.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO payment_record (pay_id, bill_id, student_no, pay_type, pay_money, pay_time)
+        VALUES (#{payId}, #{billId,jdbcType=NUMERIC}, #{studentNo}, #{payType}, #{payMoney}, #{payTime})
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM payment_record WHERE pay_id = #{payId}
+    </select>
+
+    <select id="selectByStudentNo" resultMap="BaseResultMap">
+        SELECT * FROM payment_record WHERE student_no = #{studentNo}
+        ORDER BY pay_time DESC
+    </select>
+
+</mapper>

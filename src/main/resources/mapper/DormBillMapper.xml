@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.utilitybilling.mapper.DormBillMapper">
+
+    <resultMap id="BaseResultMap" type="com.campus.utilitybilling.entity.DormBill">
+        <id column="bill_id" property="billId"/>
+        <result column="dorm" property="dorm"/>
+        <result column="year_month" property="yearMonth"/>
+        <result column="water_usage" property="waterUsage"/>
+        <result column="electric_usage" property="electricUsage"/>
+        <result column="total_money" property="totalMoney"/>
+        <result column="pay_status" property="payStatus"/>
+        <result column="create_by" property="createBy"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.campus.utilitybilling.entity.DormBill">
+        <selectKey keyProperty="billId" resultType="long" order="BEFORE">
+            SELECT seq_dorm_bill.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO dorm_bill (bill_id, dorm, year_month, water_usage, electric_usage,
+            total_money, pay_status, create_by)
+        VALUES (#{billId}, #{dorm}, #{yearMonth}, #{waterUsage}, #{electricUsage},
+            #{totalMoney}, #{payStatus}, #{createBy})
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM dorm_bill WHERE bill_id = #{billId}
+    </select>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT * FROM dorm_bill
+        <where>
+            <if test="dorm != null and dorm != ''">
+                AND dorm = #{dorm}
+            </if>
+            <if test="payStatus != null">
+                AND pay_status = #{payStatus}
+            </if>
+            <if test="yearMonth != null and yearMonth != ''">
+                AND year_month = #{yearMonth}
+            </if>
+        </where>
+        ORDER BY bill_id DESC
+    </select>
+
+    <update id="updatePayStatus">
+        UPDATE dorm_bill SET pay_status = #{payStatus} WHERE bill_id = #{billId}
+    </update>
+
+</mapper>

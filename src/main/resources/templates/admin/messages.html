@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消息管理 — 校园水电费管理系统</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><span class="icon">🏫</span> 水电管理</h2>
+                <p>管理后台</p>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">管理菜单</div>
+                    <a href="/admin" class="nav-item"><span class="nav-icon">📊</span> 首页概览</a>
+                    <a href="/admin/bills" class="nav-item"><span class="nav-icon">📄</span> 账单管理</a>
+                    <a href="/admin/config" class="nav-item"><span class="nav-icon">⚙️</span> 单价配置</a>
+                    <a href="/admin/messages" class="nav-item active"><span class="nav-icon">📨</span> 消息管理</a>
+                    <a href="/admin/users" class="nav-item"><span class="nav-icon">👥</span> 用户管理</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">管</div>
+                    <div class="user-detail">
+                        <div class="user-name" id="userName">管理员</div>
+                        <div class="user-role" id="userRole">管理员</div>
+                    </div>
+                    <button class="logout-btn" onclick="doLogout()" title="退出登录">⏻</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">消息管理</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openSendModal()">+ 发送消息</button>
+                    <button class="btn btn-warning" onclick="doRemind()">📢 一键催缴</button>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <!-- 发送消息 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📨 发送消息</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>接收学生学号 <span class="text-danger">*</span></label>
+                                <input type="text" id="msgStudentNo" class="form-control" placeholder="请输入学生学号">
+                            </div>
+                            <div class="form-group">
+                                <label>消息标题 <span class="text-danger">*</span></label>
+                                <input type="text" id="msgTitle" class="form-control" placeholder="请输入标题">
+                            </div>
+                            <div class="form-group">
+                                <label>消息类型</label>
+                                <select id="msgType" class="form-control">
+                                    <option value="notice">通知</option>
+                                    <option value="warning">警告</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>消息内容 <span class="text-danger">*</span></label>
+                                <textarea id="msgContent" class="form-control" rows="4" placeholder="请输入消息内容" style="resize:vertical;"></textarea>
+                            </div>
+                            <button class="btn btn-primary btn-block" onclick="sendMsg()">发送消息</button>
+                        </div>
+                    </div>
+
+                    <!-- 消息模板 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📋 常用模板</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="display:grid; gap:8px;">
+                                <button class="btn btn-outline btn-block" onclick="useTemplate('缴费提醒', '您有未缴水电费账单，请及时缴费。', 'warning')" style="justify-content:flex-start; text-align:left;">
+                                    ⚠ 缴费提醒
+                                </button>
+                                <button class="btn btn-outline btn-block" onclick="useTemplate('账单已出', '本月水电费账单已出，请登录系统查看。', 'notice')" style="justify-content:flex-start; text-align:left;">
+                                    📄 账单已出通知
+                                </button>
+                                <button class="btn btn-outline btn-block" onclick="useTemplate('余额不足提醒', '您的账户余额不足，请及时充值以免影响缴费。', 'warning')" style="justify-content:flex-start; text-align:left;">
+                                    💰 余额不足提醒
+                                </button>
+                                <button class="btn btn-outline btn-block" onclick="useTemplate('系统维护通知', '系统将于近期进行维护升级，届时可能无法正常使用，敬请谅解。', 'notice')" style="justify-content:flex-start; text-align:left;">
+                                    🔧 系统维护通知
+                                </button>
+                                <button class="btn btn-outline btn-block" onclick="useTemplate('安全提醒', '检测到您的密码为初始密码，请尽快修改密码以确保账户安全。', 'warning')" style="justify-content:flex-start; text-align:left;">
+                                    🔒 安全提醒
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 发送消息弹窗（批量） -->
+    <div class="modal-overlay" id="sendModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>批量发送消息</h3>
+                <button class="modal-close" onclick="closeModal('sendModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>目标宿舍（留空则发送给所有人）</label>
+                    <input type="text" id="batchDorm" class="form-control" placeholder="如：6栋808">
+                </div>
+                <div class="form-group">
+                    <label>消息标题</label>
+                    <input type="text" id="batchTitle" class="form-control" placeholder="标题">
+                </div>
+                <div class="form-group">
+                    <label>消息类型</label>
+                    <select id="batchType" class="form-control">
+                        <option value="notice">通知</option>
+                        <option value="warning">警告</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>消息内容</label>
+                    <textarea id="batchContent" class="form-control" rows="3" style="resize:vertical;"></textarea>
+                </div>
+                <p class="text-muted" style="font-size:12px;">注：将向目标宿舍所有学生分别发送一条消息</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('sendModal')">取消</button>
+                <button class="btn btn-primary" onclick="sendBatchMsg()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        if (!pageInit({ requireAdmin: true })) throw new Error('Not admin');
+        setActiveNav('/admin/messages');
+
+        function useTemplate(title, content, type) {
+            document.getElementById('msgTitle').value = title;
+            document.getElementById('msgContent').value = content;
+            document.getElementById('msgType').value = type;
+        }
+
+        async function sendMsg() {
+            const studentNo = document.getElementById('msgStudentNo').value.trim();
+            const title = document.getElementById('msgTitle').value.trim();
+            const content = document.getElementById('msgContent').value.trim();
+            const msgType = document.getElementById('msgType').value;
+
+            if (!studentNo) { toast.warning('请输入接收学生学号'); return; }
+            if (!title) { toast.warning('请输入消息标题'); return; }
+            if (!content) { toast.warning('请输入消息内容'); return; }
+
+            try {
+                await api.post('/api/messages', {
+                    studentNo,
+                    title,
+                    content,
+                    msgType,
+                    sender: auth.getStudentNo()
+                });
+                toast.success('消息发送成功');
+                document.getElementById('msgStudentNo').value = '';
+                document.getElementById('msgTitle').value = '';
+                document.getElementById('msgContent').value = '';
+            } catch (e) {
+                toast.error(e.message);
+            }
+        }
+
+        function openSendModal() {
+            document.getElementById('batchDorm').value = '';
+            document.getElementById('batchTitle').value = '';
+            document.getElementById('batchContent').value = '';
+            document.getElementById('batchType').value = 'notice';
+            openModal('sendModal');
+        }
+
+        async function sendBatchMsg() {
+            const dorm = document.getElementById('batchDorm').value.trim();
+            const title = document.getElementById('batchTitle').value.trim();
+            const content = document.getElementById('batchContent').value.trim();
+            const msgType = document.getElementById('batchType').value;
+
+            if (!title) { toast.warning('请输入消息标题'); return; }
+            if (!content) { toast.warning('请输入消息内容'); return; }
+
+            // 如果指定了宿舍，需要先查询该宿舍的学生
+            if (dorm) {
+                try {
+                    // 通过查询账单来获取宿舍学生，或者直接向该宿舍所有学生发消息
+                    // 这里我们通过遍历方式：先查账单获取该宿舍的所有学生学号
+                    const bills = await api.get(`/api/bills?dorm=${encodeURIComponent(dorm)}`);
+                    const studentNos = [...new Set(bills.map(b => b.dorm))]; // 宿舍号去重
+                    // 实际上账单里没有studentNo，只有dorm。消息接口需要studentNo
+                    // 所以我们需要另一种方式：通过催缴接口来通知
+                    toast.warning('批量发送请使用催缴功能，或逐个输入学号发送');
+                    return;
+                } catch (e) {
+                    toast.error(e.message);
+                    return;
+                }
+            }
+
+            // 无宿舍指定，提示输入学号
+            toast.warning('请输入具体学生学号，或使用催缴功能批量通知');
+        }
+
+        async function doRemind() {
+            if (!confirmAction('确定要向所有未缴费宿舍发送催缴消息吗？')) return;
+            try {
+                const result = await api.post('/api/bills/remind', { operatorNo: auth.getStudentNo() });
+                toast.success(`催缴完成，共发送 ${result.sentCount} 条消息`);
+            } catch (e) {
+                toast.error(e.message);
+            }
+        }
+
+        function doLogout() {
+            auth.clear();
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

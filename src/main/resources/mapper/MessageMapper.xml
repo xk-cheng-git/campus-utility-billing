@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.utilitybilling.mapper.MessageMapper">
+
+    <resultMap id="BaseResultMap" type="com.campus.utilitybilling.entity.Message">
+        <id column="msg_id" property="msgId"/>
+        <result column="student_no" property="studentNo"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="msg_type" property="msgType"/>
+        <result column="create_time" property="createTime"/>
+        <result column="sender" property="sender"/>
+        <result column="is_read" property="isRead"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.campus.utilitybilling.entity.Message">
+        <selectKey keyProperty="msgId" resultType="long" order="BEFORE">
+            SELECT seq_message.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO message (msg_id, student_no, title, content, msg_type, create_time, sender, is_read)
+        VALUES (#{msgId}, #{studentNo}, #{title}, #{content}, #{msgType}, #{createTime}, #{sender}, #{isRead})
+    </insert>
+
+    <select id="selectByStudentNo" resultMap="BaseResultMap">
+        SELECT * FROM message WHERE student_no = #{studentNo}
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByStudentNoAndType" resultMap="BaseResultMap">
+        SELECT * FROM message
+        WHERE student_no = #{studentNo}
+        AND msg_type = #{msgType}
+        ORDER BY create_time DESC
+    </select>
+
+    <update id="markAsRead">
+        UPDATE message SET is_read = 1 WHERE msg_id = #{msgId}
+    </update>
+
+    <select id="countUnread" resultType="int">
+        SELECT COUNT(*) FROM message
+        WHERE student_no = #{studentNo} AND is_read = 0
+    </select>
+
+</mapper>

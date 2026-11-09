@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生中心 — 校园水电费管理系统</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2><span class="icon">🏫</span> 水电管理</h2>
+                <p>学生服务中心</p>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">主菜单</div>
+                    <a href="/student" class="nav-item active">
+                        <span class="nav-icon">📊</span> 首页概览
+                    </a>
+                    <a href="/student/bills" class="nav-item">
+                        <span class="nav-icon">📄</span> 我的账单
+                    </a>
+                    <a href="/student/payments" class="nav-item">
+                        <span class="nav-icon">💳</span> 缴费记录
+                    </a>
+                    <a href="/student/messages" class="nav-item">
+                        <span class="nav-icon">🔔</span> 消息中心
+                        <span class="badge" id="msgBadge" style="display:none">0</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">个人</div>
+                    <a href="/student/profile" class="nav-item">
+                        <span class="nav-icon">👤</span> 个人中心
+                    </a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">-</div>
+                    <div class="user-detail">
+                        <div class="user-name" id="userName">-</div>
+                        <div class="user-role" id="userRole">学生</div>
+                    </div>
+                    <button class="logout-btn" onclick="doLogout()" title="退出登录">⏻</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">首页概览</h1>
+                <div class="header-actions">
+                    <div class="balance-display">💰 余额：<span id="balanceDisplay">¥0.00</span></div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <!-- 统计卡片 -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">💰</div>
+                        <div class="stat-info">
+                            <h4 id="statBalance">¥0.00</h4>
+                            <p>账户余额</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">📄</div>
+                        <div class="stat-info">
+                            <h4 id="statUnpaid">-</h4>
+                            <p>待缴账单</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h4 id="statPaid">-</h4>
+                            <p>已缴账单</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">🔔</div>
+                        <div class="stat-info">
+                            <h4 id="statUnread">-</h4>
+                            <p>未读消息</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <!-- 最近账单 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📄 最近账单</h3>
+                            <a href="/student/bills" class="btn btn-outline btn-sm">查看全部</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>月份</th>
+                                            <th>宿舍</th>
+                                            <th>金额</th>
+                                            <th>状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentBills">
+                                        <tr><td colspan="4" class="text-center text-muted">加载中...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 最近消息 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔔 最近消息</h3>
+                            <a href="/student/messages" class="btn btn-outline btn-sm">查看全部</a>
+                        </div>
+                        <div class="card-body" id="recentMessages">
+                            <div class="text-center text-muted">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        // 初始化
+        if (!pageInit()) throw new Error('Not logged in');
+        setActiveNav('/student');
+
+        // 加载数据
+        async function loadData() {
+            const studentNo = auth.getStudentNo();
+            try {
+                // 并行请求
+                const [user, bills, messages, unread] = await Promise.all([
+                    api.get(`/api/users/${studentNo}`),
+                    api.get(`/api/bills?dorm=${auth.get().dorm}`),
+                    api.get(`/api/messages?studentNo=${studentNo}`),
+                    api.get(`/api/messages/unread-count?studentNo=${studentNo}`)
+                ]);
+
+                // 统计
+                document.getElementById('statBalance').textContent = '¥' + formatMoney(user.studentMoney);
+                const unpaid = bills.filter(b => b.payStatus === 0);
+                const paid = bills.filter(b => b.payStatus === 1);
+                // 只统计当前学生的账单（按宿舍筛选后，再按当前学生相关）
+                document.getElementById('statUnpaid').textContent = unpaid.length;
+                document.getElementById('statPaid').textContent = paid.length;
+                document.getElementById('statUnread').textContent = unread.unreadCount;
+
+                // 最近账单
+                const recentBills = bills.sort((a, b) => b.billId - a.billId).slice(0, 5);
+                const billsHtml = recentBills.length > 0
+                    ? recentBills.map(b => `
+                        <tr>
+                            <td>${b.yearMonth}</td>
+                            <td>${b.dorm}</td>
+                            <td>¥${formatMoney(b.totalMoney)}</td>
+                            <td>${payStatusTag(b.payStatus)}</td>
+                        </tr>
+                    `).join('')
+                    : '<tr><td colspan="4" class="text-center text-muted">暂无账单</td></tr>';
+                document.getElementById('recentBills').innerHTML = billsHtml;
+
+                // 最近消息
+                const recentMsgs = messages.slice(0, 5);
+                if (recentMsgs.length > 0) {
+                    document.getElementById('recentMessages').innerHTML = recentMsgs.map(m => `
+                        <div class="msg-item ${m.isRead === 0 ? 'unread' : ''}">
+                            <div class="msg-dot ${m.isRead === 1 ? 'read' : ''}"></div>
+                            <div class="msg-content">
+                                <div class="msg-title">${m.title}</div>
+                                <div class="msg-meta">
+                                    <span>${msgTypeTag(m.msgType)}</span>
+                                    <span>${formatDateTime(m.createTime)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('recentMessages').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>暂无消息</p></div>';
+                }
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        loadData();
+
+        function doLogout() {
+            auth.clear();
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

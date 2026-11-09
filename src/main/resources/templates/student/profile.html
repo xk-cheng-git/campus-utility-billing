@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 — 校园水电费管理系统</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><span class="icon">🏫</span> 水电管理</h2>
+                <p>学生服务中心</p>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">主菜单</div>
+                    <a href="/student" class="nav-item"><span class="nav-icon">📊</span> 首页概览</a>
+                    <a href="/student/bills" class="nav-item"><span class="nav-icon">📄</span> 我的账单</a>
+                    <a href="/student/payments" class="nav-item"><span class="nav-icon">💳</span> 缴费记录</a>
+                    <a href="/student/messages" class="nav-item"><span class="nav-icon">🔔</span> 消息中心<span class="badge" id="msgBadge" style="display:none">0</span></a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">个人</div>
+                    <a href="/student/profile" class="nav-item active"><span class="nav-icon">👤</span> 个人中心</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">-</div>
+                    <div class="user-detail">
+                        <div class="user-name" id="userName">-</div>
+                        <div class="user-role" id="userRole">学生</div>
+                    </div>
+                    <button class="logout-btn" onclick="doLogout()" title="退出登录">⏻</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">个人中心</h1>
+                <div class="header-actions">
+                    <div class="balance-display">💰 余额：<span id="balanceDisplay">¥0.00</span></div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <!-- 个人信息 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>👤 个人信息</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="display:grid; gap:16px;" id="userInfo">
+                                <div class="d-flex justify-between">
+                                    <span class="text-muted">学号</span>
+                                    <span id="infoStudentNo" class="font-bold">-</span>
+                                </div>
+                                <div class="d-flex justify-between">
+                                    <span class="text-muted">姓名</span>
+                                    <span id="infoName" class="font-bold">-</span>
+                                </div>
+                                <div class="d-flex justify-between">
+                                    <span class="text-muted">宿舍</span>
+                                    <span id="infoDorm" class="font-bold">-</span>
+                                </div>
+                                <div class="d-flex justify-between">
+                                    <span class="text-muted">账户余额</span>
+                                    <span id="infoBalance" class="font-bold text-success" style="font-size:20px;">-</span>
+                                </div>
+                                <div class="d-flex justify-between">
+                                    <span class="text-muted">角色</span>
+                                    <span id="infoRole">学生</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 余额充值 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>💳 余额充值</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>充值金额（元）</label>
+                                <input type="number" id="topUpAmount" class="form-control" placeholder="请输入充值金额" min="0.01" step="0.01">
+                            </div>
+                            <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+                                <button class="btn btn-outline btn-sm" onclick="setAmount(10)">10元</button>
+                                <button class="btn btn-outline btn-sm" onclick="setAmount(20)">20元</button>
+                                <button class="btn btn-outline btn-sm" onclick="setAmount(50)">50元</button>
+                                <button class="btn btn-outline btn-sm" onclick="setAmount(100)">100元</button>
+                                <button class="btn btn-outline btn-sm" onclick="setAmount(200)">200元</button>
+                            </div>
+                            <button class="btn btn-success btn-block" onclick="doTopUp()">确认充值</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 修改密码 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>🔒 修改密码</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="max-width:400px;">
+                            <div class="form-group">
+                                <label>原密码</label>
+                                <input type="password" id="oldPwd" class="form-control" placeholder="请输入原密码">
+                            </div>
+                            <div class="form-group">
+                                <label>新密码</label>
+                                <input type="password" id="newPwd" class="form-control" placeholder="请输入新密码">
+                            </div>
+                            <div class="form-group">
+                                <label>确认新密码</label>
+                                <input type="password" id="confirmPwd" class="form-control" placeholder="请再次输入新密码">
+                            </div>
+                            <button class="btn btn-primary" onclick="changePassword()">修改密码</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        if (!pageInit()) throw new Error('Not logged in');
+        setActiveNav('/student/profile');
+
+        // 加载用户信息
+        async function loadUserInfo() {
+            try {
+                const user = await api.get(`/api/users/${auth.getStudentNo()}`);
+                document.getElementById('infoStudentNo').textContent = user.studentNo;
+                document.getElementById('infoName').textContent = user.username;
+                document.getElementById('infoDorm').textContent = user.dorm;
+                document.getElementById('infoBalance').textContent = '¥' + formatMoney(user.studentMoney);
+            } catch (e) {
+                toast.error(e.message);
+            }
+        }
+
+        function setAmount(amount) {
+            document.getElementById('topUpAmount').value = amount;
+        }
+
+        async function doTopUp() {
+            const amount = parseFloat(document.getElementById('topUpAmount').value);
+            if (!amount || amount <= 0) {
+                toast.warning('请输入有效的充值金额');
+                return;
+            }
+
+            try {
+                await api.put(`/api/users/${auth.getStudentNo()}/top-up`, { amount });
+                toast.success(`充值成功！+¥${formatMoney(amount)}`);
+                document.getElementById('topUpAmount').value = '';
+                loadUserInfo();
+                loadBalance();
+            } catch (e) {
+                toast.error(e.message);
+            }
+        }
+
+        async function changePassword() {
+            const oldPwd = document.getElementById('oldPwd').value.trim();
+            const newPwd = document.getElementById('newPwd').value.trim();
+            const confirmPwd = document.getElementById('confirmPwd').value.trim();
+
+            if (!oldPwd) { toast.warning('请输入原密码'); return; }
+            if (!newPwd) { toast.warning('请输入新密码'); return; }
+            if (newPwd !== confirmPwd) { toast.warning('两次输入的新密码不一致'); return; }
+            if (newPwd.length < 4) { toast.warning('新密码长度不能少于4位'); return; }
+
+            try {
+                await api.put(`/api/users/${auth.getStudentNo()}/change-password`, {
+                    oldPassword: oldPwd,
+                    newPassword: newPwd
+                });
+                toast.success('密码修改成功');
+                document.getElementById('oldPwd').value = '';
+                document.getElementById('newPwd').value = '';
+                document.getElementById('confirmPwd').value = '';
+            } catch (e) {
+                toast.error(e.message);
+            }
+        }
+
+        loadUserInfo();
+
+        function doLogout() {
+            auth.clear();
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

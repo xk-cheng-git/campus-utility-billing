@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.utilitybilling.mapper.UserInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.campus.utilitybilling.entity.UserInfo">
+        <id column="student_no" property="studentNo"/>
+        <result column="username" property="username"/>
+        <result column="dorm" property="dorm"/>
+        <result column="student_money" property="studentMoney"/>
+        <result column="password" property="password"/>
+        <result column="role" property="role"/>
+    </resultMap>
+
+    <select id="selectByStudentNo" resultMap="BaseResultMap">
+        SELECT * FROM user_info WHERE student_no = #{studentNo}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM user_info ORDER BY student_no
+    </select>
+
+    <select id="selectByDorm" resultMap="BaseResultMap">
+        SELECT * FROM user_info WHERE dorm = #{dorm} ORDER BY student_no
+    </select>
+
+    <insert id="insert" parameterType="com.campus.utilitybilling.entity.UserInfo">
+        INSERT INTO user_info (student_no, username, dorm, student_money, password, role)
+        VALUES (#{studentNo}, #{username}, #{dorm}, #{studentMoney}, #{password}, #{role})
+    </insert>
+
+    <update id="update" parameterType="com.campus.utilitybilling.entity.UserInfo">
+        UPDATE user_info
+        <set>
+            <if test="username != null">username = #{username},</if>
+            <if test="dorm != null">dorm = #{dorm},</if>
+            <if test="studentMoney != null">student_money = #{studentMoney},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="role != null">role = #{role},</if>
+        </set>
+        WHERE student_no = #{studentNo}
+    </update>
+
+    <update id="updateBalance">
+        UPDATE user_info SET student_money = #{studentMoney} WHERE student_no = #{studentNo}
+    </update>
+
+</mapper>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 — 校园水电费管理系统</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="login-page">
+    <div class="login-card">
+        <div class="logo">
+            <span class="icon">🏫</span>
+            <h1>校园水电费管理系统</h1>
+            <p>Campus Utility Billing System</p>
+        </div>
+        <form id="loginForm" onsubmit="return handleLogin(event)">
+            <div class="form-group">
+                <label for="studentNo">学号 / 工号</label>
+                <input type="text" id="studentNo" class="form-control" placeholder="请输入学号" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" class="form-control" placeholder="请输入密码" required>
+            </div>
+            <div class="form-group mt-4">
+                <button type="submit" id="loginBtn" class="btn btn-primary btn-block btn-lg">登 录</button>
+            </div>
+            <p class="text-center text-muted mt-2" style="font-size:12px;">
+                初始密码=账号
+            </p>
+        </form>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        // 已登录则直接跳转
+        if (auth.isLoggedIn()) {
+            window.location.href = auth.isAdmin() ? '/admin' : '/student';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const studentNo = document.getElementById('studentNo').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!studentNo || !password) {
+                toast.warning('请输入学号和密码');
+                return false;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '登录中...';
+
+            try {
+                const data = await api.post('/api/auth/login', { studentNo, password });
+                auth.save(data);
+                toast.success('登录成功，欢迎 ' + data.username);
+                setTimeout(() => {
+                    window.location.href = (data.admin || data.isAdmin) ? '/admin' : '/student';
+                }, 600);
+            } catch (err) {
+                toast.error(err.message || '登录失败');
+                btn.disabled = false;
+                btn.textContent = '登 录';
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>

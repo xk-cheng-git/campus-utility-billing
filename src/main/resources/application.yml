@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: campus-utility-billing
+
+  # 数据库核心配置（必须写对）
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@localhost:1521:STU
+    username: campus_user
+    password: Campus123
+
+  # Thymeleaf
+  thymeleaf:
+    cache: false
+    encoding: UTF-8
+    mode: HTML
+    prefix: classpath:/templates/
+    suffix: .html
+
+  # 静态资源
+  web:
+    resources:
+      cache:
+        period: 0
+      chain:
+        cache: false
+
+server:
+  port: 8080
+
+# MyBatis
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.campus.utilitybilling.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 数据库连接日志（强制开启）
+logging:
+  level:
+    com.zaxxer.hikari: DEBUG
+    org.springframework.jdbc: DEBUG
